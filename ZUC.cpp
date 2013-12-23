@@ -191,15 +191,16 @@ void Initialization(u8* k, u8* iv)
 		LFSRWithInitializationMode(w >> 1);
 		nCount--;
 	}
+	
+	/*First generation, abandoned*/
+	BitReorganization();
+	F();
+	LFSRWithWorkMode();
 }
 
 void GenerateKeyStream(u32 *pKeyStream, u32 KeyStreamLen)
 {
 	int i;
-
-	BitReorganization();
-	F();
-	LFSRWithWorkMode();
 
 	for (i=0; i<KeyStreamLen; i++)
 	{
