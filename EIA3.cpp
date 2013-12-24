@@ -1,19 +1,63 @@
 #include "ZUC.h"
 #include "EIA3.h"
+#include <string.h>
 
 /*Length range of input message*/
 u32 gMsgLen;
 
 /*Key Stream*/
-#define KEY_STREAM_COUNT 2
-u8 gKeyStream[KEY_STREAM_COUNT*4] = {0};
+#define KEY_STREAM_COUNT 3
+u32 gKeyStream[KEY_STREAM_COUNT] = {0};
+
+/*MAC*/
+u32 gMAC = 0;
+
+/*Get i-th bit in bit stream DATA*/
+u32 GET_BIT(u8 *DATA, u32 i)
+{
+	return (DATA[i/8] & ((0x80)>>(i%8))) ? 1 : 0;
+}
+
+/*Get i-th WORD(4 bytes) in bit stream DATA*/
+u32 GET_WORD(u32 *DATA, u32 i)
+{
+	if (i%32 == 0)
+	{
+		return DATA[i/32];
+	}
+	else
+	{
+		return ( (DATA[i/32] << (i%32)) | (DATA[i/32+1] >> (32-i%32)) );
+	}
+}
+
+u32 GET_NEXT_KEYSTREAM()
+{
+	u32 i = 0;
+
+	if ((gMsgLen % 32) == 0)
+	{
+		for (i=0; i<KEY_STREAM_COUNT-1; i++)
+		{
+			gKeyStream[i] = gKeyStream[i+1];
+		}
+
+		GenerateKeyStream(&gKeyStream[i], 1);
+	}
+
+	return GET_WORD(gKeyStream, (gMsgLen%32));
+}
+
+u32 GET_FINAL_KEYSTREAM()
+{
+	return gKeyStream[2];
+}
 
 /*Length of COUNT is 4*/
-u32 EIA3_Init(u8 *IK, u8 *COUNT, u8 DIRECTION, u8 BEARER)
+void EIA3_Init(u8 *IK, u8 *COUNT, u8 BEARER, u8 DIRECTION)
 {
 	u8 IV[16] = {0};
 	u32 i = 0;
-	u32 TempKeyStream = 0;
 
 	IV[0] = COUNT[0];
 	IV[1] = COUNT[1];
@@ -34,83 +78,43 @@ u32 EIA3_Init(u8 *IK, u8 *COUNT, u8 DIRECTION, u8 BEARER)
 
 	Initialization(IK, IV);
 	
-	for (i=0; i<KEY_STREAM_COUNT; i++)
+	/*Skip the first 4 bytes, because GET_NEXT_KEYSTREAM will do this for us at the beginning*/
+	for (i=1; i<KEY_STREAM_COUNT; i++)
 	{
-		//need update to byte stream version
-		GenerateKeyStream(&TempKeyStream, 1);
-		memcpy(&gKeyStream[i*4], &TempKeyStream, 4);
+		GenerateKeyStream(&gKeyStream[i], 1);
 	}
 
 	gMsgLen = 0;
+	gMAC = 0;
 }
 
 /*Length of MAC is 4*/
-u32 EIA3_Update(u8 *M, u32 LENGTH, u8 *MAC)
+void EIA3_Update(u8 *M, u32 LENGTH)
 {
-	u32 i;
-	u8 MACTemp[4] = {0};
+	u32 i = 0;
+	u32 MACTemp = 0;
 
 	for (i=0; i<LENGTH; i++)
 	{
+		MACTemp = GET_NEXT_KEYSTREAM();
 		if (GET_BIT(M, i))
 		{
-			GET_NEXT_KEYSTREAM(MACTemp);
-			for (j=0; j<4; j++)
-			{
-				MAC[j] = MAC[j] ^ MACTemp[j];
-			}
+			gMAC = gMAC ^ MACTemp;
 		}
 		gMsgLen++;
 	}
 }
 
-/*Length of MAC is 4*/
-void EIA3_Final(u8 *MAC)
-{
-	
-}
-
-u8 GET_GIT(u8 *DATA, u32 i)
-{
-	return (DATA[i/8] & (0x80>>(i%8))) ? 1 : 0;
-}
-
-/*Length of DATAOUT is 4*/
-void GET_WORD(u8 *DATA, u32 i, u8 *DATAOUT)
-{
-	u32 j = 0;
-
-	for (j=0; j<4; j++)
-	{
-		if (i%8 == 0)
-		{
-			DATAOUT[j] = DATA[i/8+j];
-		}
-		else
-		{
-			DATAOUT[j] = (DATA[i/8+j] << (i%8)) | (DATA[i/8+j+1] >> (8-i%8));
-		}
-	}
-}
-
-/*Length of DATA is 4*/
-void GET_NEXT_KEYSTREAM(u8 *DATA)
+u32 EIA3_Final()
 {
 	u32 i = 0;
-	u32 TempKeyStream = 0;
-	
-	//error!!!!!!!!!need to change the chance of generate new key stream!!!!!!!!!!
-	if ((gMsgLen % 32) == 1)
-	{
-		for (i=0; i<KEY_STREAM_COUNT-1; i++)
-		{
-			memcpy(&gKeyStream[i*4], &gKeyStream[(i+1)*4], 4);
-		}
+	u32 MACTemp = 0;
 
-		//need update to byte stream version
-		GenerateKeyStream(&TempKeyStream, 1);
-		memcpy(&gKeyStream[i*4], &TempKeyStream, 4);
-	}
+	MACTemp = GET_NEXT_KEYSTREAM();
+	gMAC = gMAC ^ MACTemp;
 
-	GET_WORD(gKeyStream, , DATA);
+	MACTemp = GET_FINAL_KEYSTREAM();
+	gMAC = gMAC ^ MACTemp;
+
+	return gMAC;
 }
