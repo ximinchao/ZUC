@@ -2,6 +2,38 @@
 #include "EIA3.h"
 
 #include <stdio.h>
+#include <string.h>
+
+void TestLittleEndian()
+{
+	u32 n = 0;
+	u8 i = 0;
+	unsigned char pData[4] = {0};
+
+	/*First display*/
+	n = 1;
+	memcpy(pData, &n, 4);
+	
+	printf("Data in memory:\t0x");
+	for (i=0; i<4; i++)
+	{
+		printf("%x", pData[i]);
+	}
+	printf("\n");
+	printf("Data in CPU:\t0x%x\n", n);
+
+	/*Second display*/
+	n = (n << 1);
+	memcpy(pData, &n, 4);
+	
+	printf("Data in memory:\t0x");
+	for (i=0; i<4; i++)
+	{
+		printf("%x", pData[i]);
+	}
+	printf("\n");
+	printf("Data in CPU:\t0x%x\n", n);
+}
 
 void TestZUC()
 {
@@ -55,5 +87,6 @@ int main()
 {
 	TestZUC();
 	TestEIA3();
+	TestLittleEndian();
 	return 0;
 }
