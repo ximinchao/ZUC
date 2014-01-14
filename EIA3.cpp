@@ -50,7 +50,14 @@ u32 GET_NEXT_KEYSTREAM()
 
 u32 GET_FINAL_KEYSTREAM()
 {
-	return gKeyStream[2];
+	if ((gMsgLen%32) == 0)
+	{
+		return gKeyStream[1];
+	}
+	else
+	{
+		return gKeyStream[2];
+	}
 }
 
 /*Length of COUNT is 4*/

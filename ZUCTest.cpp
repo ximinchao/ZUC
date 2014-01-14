@@ -81,12 +81,35 @@ void TestEIA3()
 	EIA3_Update(M+(LENGTH-49)/8, 49);
 	MAC = EIA3_Final();
 	printf("MAC:\t0x%08x\n", MAC);
+
+	EIA3_Init(IK, COUNT, BEARER, DIRECTION);
+	EIA3_Update(M, LENGTH);
+	MAC = EIA3_Final();
+	printf("MAC:\t0x%08x\n", MAC);
+}
+
+void TestEIA3_Spec()
+{
+	u8 IK[16] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+	u8 COUNT[4] = {0x0, 0x0, 0x0, 0x01};
+	u8 BEARER = 0x02, DIRECTION = 1;
+
+	u8 M[8] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38};
+	u32 LENGTH = 64;
+
+	u32 MAC;
+
+	EIA3_Init(IK, COUNT, BEARER, DIRECTION);
+	EIA3_Update(M, LENGTH);
+	MAC = EIA3_Final();
+	printf("MAC:\t0x%08x\n", MAC);
 }
 
 int main()
 {
 	TestZUC();
 	TestEIA3();
+	TestEIA3_Spec();
 	TestLittleEndian();
 	return 0;
 }
