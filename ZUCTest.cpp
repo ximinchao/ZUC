@@ -93,11 +93,22 @@ void TestEIA3_Spec()
 	u8 IK[16] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 	u8 COUNT[4] = {0x0, 0x0, 0x0, 0x01};
 	u8 BEARER = 0x02, DIRECTION = 1;
-
-	u8 M[10] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30};
+	u8 M[19] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30};
 	u32 LENGTH = 80;
+	u32 MAC = 0;
 
-	u32 MAC;
+	EIA3_Init(IK, COUNT, BEARER, DIRECTION);
+	EIA3_Update(M, LENGTH);
+	MAC = EIA3_Final();
+	printf("MAC:\t0x%08x\n", MAC);
+
+	memcpy(IK, "\x20\x14\x20\x15\x01\x15\xA4\xC7\x69\x51\x02\x41\x02\x96\x7C\x4A", 16);
+	memcpy(COUNT, "\x20\x14\x20\x15", 4);
+	BEARER = 0x02;
+	DIRECTION = 1;
+	memcpy(M, "\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39", 19);
+	LENGTH = 19*8;
+	MAC = 0;
 
 	EIA3_Init(IK, COUNT, BEARER, DIRECTION);
 	EIA3_Update(M, LENGTH);
