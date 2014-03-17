@@ -197,7 +197,7 @@ void Initialization(u8* k, u8* iv)
 
 void GenerateKeyStream(u32 *pKeyStream, u32 KeyStreamLen)
 {
-	int i;
+	u32 i;
 
 	for (i=0; i<KeyStreamLen; i++)
 	{
